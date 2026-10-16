@@ -7,6 +7,14 @@ const WS_PORT = Number(process.env.SOCKET_PORT) || 3001
 
 initConfig()
 
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught exception:", error)
+})
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection:", reason)
+})
+
 const server = createAdaptorServer({ fetch: app.fetch })
 
 createSocketServer(server)

@@ -284,6 +284,7 @@ class Game {
     const oldSocketId = player.id
     const replacesConnection = player.connected && oldSocketId !== socket.id
     this.playerManager.updateSocketId(oldSocketId, socket.id)
+    this.round.updatePlayerId(oldSocketId, socket.id)
     player.connected = true
 
     if (replacesConnection) {

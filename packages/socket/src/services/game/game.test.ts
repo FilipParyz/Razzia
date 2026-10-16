@@ -487,6 +487,41 @@ describe("reconnection", () => {
     expect(disconnected).toEqual([alice.id])
   })
 
+  it("keeps the answer of a player who reconnects before the result", async () => {
+    const { game, sockets, start, createSocket, status } = setup(
+      createQuizz([createQuestion({ solutions: [0] })]),
+    )
+    const [alice] = sockets
+
+    await start()
+    game.selectAnswer(alice, [0])
+    game.setPlayerDisconnected(alice.id)
+    game.reconnect(createSocket("alice-new", "alice"))
+    game.advance()
+    await vi.advanceTimersByTimeAsync(TICK_MS)
+
+    expect(status("alice-new")?.data).toMatchObject({ correct: true })
+  })
+
+  it("refuses a second answer after a reconnection", async () => {
+    const { game, sockets, start, createSocket, status } = setup(
+      createQuizz([createQuestion({ solutions: [0] })]),
+    )
+    const [alice] = sockets
+
+    await start()
+    game.selectAnswer(alice, [0])
+
+    const aliceNew = createSocket("alice-new", "alice")
+
+    game.reconnect(aliceNew)
+    game.selectAnswer(aliceNew, [1])
+    game.advance()
+    await vi.advanceTimersByTimeAsync(TICK_MS)
+
+    expect(status("alice-new")?.data).toMatchObject({ correct: true })
+  })
+
   it("hands the game over to the latest manager connection", () => {
     const { game, createSocket, lastEvent, disconnected } = setup(
       createQuizz([createQuestion()]),

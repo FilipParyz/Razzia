@@ -566,6 +566,12 @@ export class RoundManager {
     this.endIfEveryoneAnswered()
   }
 
+  updatePlayerId(oldId: string, newId: string): void {
+    this.playersAnswers = this.playersAnswers.map((answer) =>
+      answer.playerId === oldId ? { ...answer, playerId: newId } : answer,
+    )
+  }
+
   endIfEveryoneAnswered(): void {
     if (!this.acceptingAnswers) {
       return

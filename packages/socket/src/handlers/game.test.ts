@@ -383,3 +383,53 @@ describe("game socket handlers", () => {
     },
   )
 })
+
+describe("socket payload validation", () => {
+  it("rejects a non-object reconnect payload", async () => {
+    const client = await connectAs("mallory")
+    const error = waitFor(client, EVENTS.GAME.ERROR_MESSAGE)
+
+    // @ts-expect-error -- deliberately malformed payload
+    client.emit(EVENTS.PLAYER.RECONNECT, null)
+
+    expect(await error).toBe("errors:invalidRequest")
+  })
+
+  it("rejects a selected answer without data", async () => {
+    const client = await connectAs("mallory")
+    const error = waitFor(client, EVENTS.GAME.ERROR_MESSAGE)
+
+    // @ts-expect-error -- deliberately malformed payload
+    client.emit(EVENTS.PLAYER.SELECTED_ANSWER, { gameId: "whatever" })
+
+    expect(await error).toBe("errors:invalidRequest")
+  })
+
+  it("rejects duplicated answer keys", async () => {
+    const client = await connectAs("mallory")
+    const error = waitFor(client, EVENTS.GAME.ERROR_MESSAGE)
+
+    client.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
+      gameId: "whatever",
+      data: { answerKeys: [0, 0, 0, 0] },
+    })
+
+    expect(await error).toBe("errors:invalidRequest")
+  })
+
+  it("keeps serving after a malformed payload", async () => {
+    const { game } = await createGame()
+    const client = await connectAs("mallory")
+
+    // @ts-expect-error -- deliberately malformed payload
+    client.emit(EVENTS.PLAYER.RECONNECT, null)
+
+    const joined = waitFor(client, EVENTS.GAME.SUCCESS_JOIN)
+
+    client.emit(EVENTS.PLAYER.LOGIN, {
+      ticket: await mintJoinTicket("mallory", game.gameId, "Mallory"),
+    })
+
+    expect(await joined).toMatchObject({ username: "Mallory" })
+  })
+})

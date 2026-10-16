@@ -1,5 +1,7 @@
 import type { ServerType } from "@hono/node-server"
+import { EVENTS } from "@razzia/common/constants"
 import type { Server } from "@razzia/common/types/game/socket"
+import { clientEventValidators } from "@razzia/common/validators/socket"
 import { api } from "@razzia/socket/api"
 import { gameSocketHandlers } from "@razzia/socket/handlers/game"
 import type { SocketHandler } from "@razzia/socket/handlers/types"
@@ -11,6 +13,10 @@ import { HTTPException } from "hono/http-exception"
 import { JwtTokenExpired } from "hono/utils/jwt/types"
 import { StatusCodes } from "http-status-codes"
 import { Server as ServerIO } from "socket.io"
+import type { z } from "zod"
+
+const eventValidators: Partial<Record<string, z.ZodType>> =
+  clientEventValidators
 
 export const app = new Hono()
 
@@ -97,6 +103,27 @@ export const createSocketServer = (server: ServerType): Server => {
     console.log(
       `A user connected: socketId: ${socket.id}, clientId: ${socket.data.clientId}`,
     )
+
+    socket.use((packet, next) => {
+      const validator = eventValidators[packet[0]]
+
+      if (!validator) {
+        next()
+
+        return
+      }
+
+      const result = validator.safeParse(packet[1])
+
+      if (!result.success) {
+        socket.emit(EVENTS.GAME.ERROR_MESSAGE, "errors:invalidRequest")
+
+        return
+      }
+
+      packet[1] = result.data
+      next()
+    })
 
     socketHandlers.forEach((handler) => {
       handler({ io, socket })

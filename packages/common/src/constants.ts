@@ -58,6 +58,10 @@ export const createDefaultGameSettings = (): GameSettings => ({
 
 export const MAX_POINTS = 1000
 
+export const MIN_ANSWERS = 2
+
+export const MAX_ANSWERS = 4
+
 export const QUIZZ_MODES = {
   QUIZ: "quiz",
   SURVEY: "survey",

@@ -1,4 +1,4 @@
-import { QUIZZ_MODES } from "@razzia/common/constants"
+import { MAX_ANSWERS, MIN_ANSWERS, QUIZZ_MODES } from "@razzia/common/constants"
 import FieldError from "@razzia/web/components/forms/FieldError"
 import {
   ANSWERS_COLORS,
@@ -29,7 +29,7 @@ const QuestionEditorAnswers = () => {
   const { SolutionPicker } = QUESTION_REGISTRY[questionType]
 
   const addAnswer = () => {
-    if (currentQuestion.answers.length >= 4) {
+    if (currentQuestion.answers.length >= MAX_ANSWERS) {
       return
     }
 
@@ -37,7 +37,7 @@ const QuestionEditorAnswers = () => {
   }
 
   const removeAnswer = () => {
-    if (currentQuestion.answers.length <= 2) {
+    if (currentQuestion.answers.length <= MIN_ANSWERS) {
       return
     }
 
@@ -64,7 +64,7 @@ const QuestionEditorAnswers = () => {
           <button
             onClick={removeAnswer}
             aria-label={t("quizz:removeAnswer")}
-            disabled={currentQuestion.answers.length <= 2}
+            disabled={currentQuestion.answers.length <= MIN_ANSWERS}
             className="bg-accent text-accent-foreground hover:bg-accent flex size-7 items-center justify-center rounded-lg disabled:opacity-40"
           >
             <Minus className="size-4" />
@@ -72,7 +72,7 @@ const QuestionEditorAnswers = () => {
           <button
             onClick={addAnswer}
             aria-label={t("quizz:addAnswer")}
-            disabled={currentQuestion.answers.length >= 4}
+            disabled={currentQuestion.answers.length >= MAX_ANSWERS}
             className="bg-accent text-accent-foreground hover:bg-accent flex size-7 items-center justify-center rounded-lg disabled:opacity-40"
           >
             <Plus className="size-4" />

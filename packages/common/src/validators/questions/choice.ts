@@ -1,4 +1,8 @@
-import { SCORING_MODES } from "@razzia/common/constants"
+import {
+  MAX_ANSWERS,
+  MIN_ANSWERS,
+  SCORING_MODES,
+} from "@razzia/common/constants"
 import type { QuestionRefinement } from "@razzia/common/validators/questions"
 import { z } from "zod"
 
@@ -10,11 +14,11 @@ export const refineChoiceQuestion: QuestionRefinement = (
   { answers, solutions },
   addIssue,
 ) => {
-  if (answers.length < 2) {
+  if (answers.length < MIN_ANSWERS) {
     addIssue(["answers"], "errors:quizz.tooFewAnswers")
   }
 
-  if (answers.length > 4) {
+  if (answers.length > MAX_ANSWERS) {
     addIssue(["answers"], "errors:quizz.tooManyAnswers")
   }
 

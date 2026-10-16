@@ -39,6 +39,8 @@ describe("multiple choice scoring", () => {
     [SCORING_MODES.BALANCED, [0, 2, 3], 0],
     [SCORING_MODES.LENIENT, [0, 2, 3], 0.5],
     [SCORING_MODES.LENIENT, [0, 1, 2, 3], 1],
+    [SCORING_MODES.BALANCED, [0, 0, 0, 0], 0.5],
+    [SCORING_MODES.LENIENT, [0, 0, 0, 0], 0.5],
   ])("%s mode scores %j as %d", (mode, answerIds, expected) => {
     expect(score(question(mode), answerIds)).toBe(expected)
   })

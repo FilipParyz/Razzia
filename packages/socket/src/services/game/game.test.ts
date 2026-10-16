@@ -190,6 +190,10 @@ describe("quiz flow", () => {
       data: { top: [{ username: "Alice", points: 1000 }, { username: "Bob" }] },
     })
     expect(status("bob")?.data).toMatchObject({ rank: 2 })
+    expect(status("bob")?.data.top).toEqual([
+      { username: "Alice", points: 1000 },
+      { username: "Bob", points: 0 },
+    ])
     expect(getResultsMeta().at(0)).toMatchObject({
       gameMode: QUIZZ_MODES.QUIZ,
       playerCount: 2,

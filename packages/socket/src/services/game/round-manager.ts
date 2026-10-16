@@ -478,7 +478,9 @@ export class RoundManager {
       return
     }
 
-    const top = this.leaderboard.slice(0, 3)
+    const top = this.leaderboard
+      .slice(0, 3)
+      .map(({ username, points }) => ({ username, points }))
 
     this.opts.send(this.opts.getManagerId(), STATUS.FINISHED, {
       subject: this.opts.quizz.subject,

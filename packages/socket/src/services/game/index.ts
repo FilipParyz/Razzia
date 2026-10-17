@@ -76,6 +76,7 @@ class Game {
       gameId: this.gameId,
       gameMode: quizz.gameMode,
       getManagerId: () => this._manager.id,
+      isStarted: () => this.started,
     })
 
     this.round = new RoundManager({
@@ -265,7 +266,7 @@ class Game {
       status,
       players: this.playerManager.getAll(),
     })
-    socket.emit(EVENTS.GAME.TOTAL_PLAYERS, this.playerManager.count())
+    socket.emit(EVENTS.GAME.TOTAL_PLAYERS, this.playerManager.joinedCount())
 
     registry.reactivateGame(this.gameId)
     console.log(`Manager reconnected to game ${this.inviteCode}`)
@@ -312,7 +313,7 @@ class Game {
       status,
       player: { username: player.username, points: player.points },
     })
-    socket.emit(EVENTS.GAME.TOTAL_PLAYERS, this.playerManager.count())
+    this.playerManager.broadcastCount()
 
     console.log(
       `Player ${player.username} reconnected to game ${this.inviteCode}`,

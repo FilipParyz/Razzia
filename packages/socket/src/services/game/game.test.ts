@@ -517,6 +517,33 @@ describe("player connection updates", () => {
       timedOut: false,
     })
   })
+
+  it("only counts connected players in the lobby", () => {
+    const { game, sockets, createSocket, lastEvent } = setup(
+      createQuizz([createQuestion()]),
+    )
+    const [alice] = sockets
+
+    game.setPlayerDisconnected(alice.id)
+
+    expect(lastEvent(game.gameId, EVENTS.GAME.TOTAL_PLAYERS)?.data).toBe(1)
+
+    game.reconnect(createSocket("alice-new", "alice"))
+
+    expect(lastEvent(game.gameId, EVENTS.GAME.TOTAL_PLAYERS)?.data).toBe(2)
+  })
+
+  it("keeps counting away players once the game started", async () => {
+    const { game, sockets, start, lastEvent } = setup(
+      createQuizz([createQuestion()]),
+    )
+    const [alice] = sockets
+
+    await start()
+    game.setPlayerDisconnected(alice.id)
+
+    expect(lastEvent(game.gameId, EVENTS.GAME.TOTAL_PLAYERS)?.data).toBe(2)
+  })
 })
 
 describe("reconnection", () => {

@@ -22,6 +22,8 @@
     "unlock": "Odanın kilidini aç"
   },
   "pinLabel": "PIN Kodu",
+  "playerConnectionLost": "Bağlantı koptu",
+  "playerReconnecting": "Yeniden bağlanması bekleniyor",
   "playersJoined": "Katılan oyuncular",
   "questionPrefix": "Soru #",
   "rank_ordinal_other": "{{count}}. sıra",

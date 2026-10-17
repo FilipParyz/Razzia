@@ -1,12 +1,16 @@
 import { expect, type Page } from "@playwright/test"
 import { t } from "@razzia/e2e/utils/i18n"
 
-export const enterPin = async (page: Page, pin: string) => {
+export const typePin = async (page: Page, pin: string) => {
   await page.goto("/")
   await page
     .getByRole("textbox", { name: t("game:pinDigit", { position: 1 }) })
     .click()
   await page.keyboard.type(pin)
+}
+
+export const enterPin = async (page: Page, pin: string) => {
+  await typePin(page, pin)
   await page.getByRole("button", { name: t("common:submit") }).click()
 }
 

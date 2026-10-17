@@ -6,7 +6,7 @@ import { usePlayerStore } from "@razzia/web/features/game/stores/player"
 import { ApiError } from "@razzia/web/lib/api"
 import { useMutation } from "@tanstack/react-query"
 import { useSearch } from "@tanstack/react-router"
-import { useEffect, useRef, useState } from "react"
+import { type SubmitEvent, useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -29,7 +29,8 @@ const Room = () => {
     },
   })
 
-  const handleJoin = () => {
+  const handleJoin = (e: SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault()
     check(invitation.replace(/\s/gu, ""))
   }
 
@@ -44,11 +45,13 @@ const Room = () => {
 
   return (
     <Card>
-      <p className="mb-2 text-lg font-semibold">{t("game:pinLabel")}</p>
-      <PinInput value={invitation} onChange={setInvitation} />
-      <Button className="mt-4" onClick={handleJoin} disabled={isPending}>
-        {t("common:submit")}
-      </Button>
+      <form onSubmit={handleJoin} className="flex flex-col">
+        <p className="mb-2 text-lg font-semibold">{t("game:pinLabel")}</p>
+        <PinInput value={invitation} onChange={setInvitation} />
+        <Button type="submit" className="mt-4" disabled={isPending}>
+          {t("common:submit")}
+        </Button>
+      </form>
     </Card>
   )
 }

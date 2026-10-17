@@ -141,6 +141,37 @@ describe("quiz flow", () => {
     )
   })
 
+  it("refuses to start when every player is away", async () => {
+    const { game, manager, sockets, lastEvent } = setup(
+      createQuizz([createQuestion()]),
+    )
+
+    for (const socket of sockets) {
+      game.setPlayerDisconnected(socket.id)
+    }
+
+    await game.start(manager)
+
+    expect(game.started).toBe(false)
+    expect(game.players).toHaveLength(0)
+    expect(lastEvent(MANAGER, EVENTS.GAME.ERROR_MESSAGE)?.data).toBe(
+      "errors:game.noPlayersConnected",
+    )
+  })
+
+  it("removes away players when the game starts", async () => {
+    const { game, sockets, start, lastEvent } = setup(
+      createQuizz([createQuestion()]),
+    )
+    const [alice, bob] = sockets
+
+    game.setPlayerDisconnected(bob.id)
+    await start()
+
+    expect(game.players.map((player) => player.id)).toEqual([alice.id])
+    expect(lastEvent(MANAGER, EVENTS.MANAGER.REMOVE_PLAYER)?.data).toBe(bob.id)
+  })
+
   it("plays a full game and saves the result", async () => {
     const questions = [
       createQuestion({ solutions: [0] }),

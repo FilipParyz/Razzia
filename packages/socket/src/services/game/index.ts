@@ -365,6 +365,14 @@ class Game {
   }
 
   async start(socket: Socket) {
+    if (!this.started) {
+      const away = this.playerManager.getAll().filter((p) => !p.connected)
+
+      for (const player of away) {
+        this.removePlayer(player.id)
+      }
+    }
+
     await this.round.start(socket)
   }
 

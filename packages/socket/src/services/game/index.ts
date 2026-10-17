@@ -76,6 +76,7 @@ class Game {
       gameId: this.gameId,
       gameMode: quizz.gameMode,
       getManagerId: () => this._manager.id,
+      isStarted: () => this.started,
     })
 
     this.round = new RoundManager({
@@ -265,7 +266,7 @@ class Game {
       status,
       players: this.playerManager.getAll(),
     })
-    socket.emit(EVENTS.GAME.TOTAL_PLAYERS, this.playerManager.count())
+    socket.emit(EVENTS.GAME.TOTAL_PLAYERS, this.playerManager.joinedCount())
 
     registry.reactivateGame(this.gameId)
     console.log(`Manager reconnected to game ${this.inviteCode}`)
@@ -284,7 +285,9 @@ class Game {
     const oldSocketId = player.id
     const replacesConnection = player.connected && oldSocketId !== socket.id
     this.playerManager.updateSocketId(oldSocketId, socket.id)
+    this.round.updatePlayerId(oldSocketId, socket.id)
     player.connected = true
+    this.notifyPlayerUpdated(oldSocketId, player)
 
     if (replacesConnection) {
       this.io.in(oldSocketId).disconnectSockets(true)
@@ -310,7 +313,7 @@ class Game {
       status,
       player: { username: player.username, points: player.points },
     })
-    socket.emit(EVENTS.GAME.TOTAL_PLAYERS, this.playerManager.count())
+    this.playerManager.broadcastCount()
 
     console.log(
       `Player ${player.username} reconnected to game ${this.inviteCode}`,
@@ -334,10 +337,26 @@ class Game {
     return player
   }
 
-  setPlayerDisconnected(socketId: string) {
+  setPlayerDisconnected(socketId: string, timedOut = false) {
     this.playerManager.setDisconnected(socketId)
     this.playerManager.broadcastCount()
     this.round.endIfEveryoneAnswered()
+
+    const player = this.playerManager.findById(socketId)
+
+    if (player) {
+      this.notifyPlayerUpdated(socketId, player, timedOut)
+    }
+  }
+
+  private notifyPlayerUpdated(
+    previousId: string,
+    player: Player,
+    timedOut = false,
+  ) {
+    this.io
+      .to(this._manager.id)
+      .emit(EVENTS.MANAGER.PLAYER_UPDATED, { previousId, player, timedOut })
   }
 
   // Game flow
@@ -347,6 +366,14 @@ class Game {
   }
 
   async start(socket: Socket) {
+    if (!this.started) {
+      const away = this.playerManager.getAll().filter((p) => !p.connected)
+
+      for (const player of away) {
+        this.removePlayer(player.id)
+      }
+    }
+
     await this.round.start(socket)
   }
 

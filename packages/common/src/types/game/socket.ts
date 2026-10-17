@@ -7,11 +7,13 @@ import type {
   QuizzMode,
 } from "@razzia/common/types/game"
 import type { Status, StatusDataMap } from "@razzia/common/types/game/status"
+import type { clientEventValidators } from "@razzia/common/validators/socket"
 import {
   Server as ServerIO,
   Socket as SocketIO,
   type DefaultEventsMap,
 } from "socket.io"
+import type { z } from "zod"
 
 export interface SocketData {
   clientId: string
@@ -31,21 +33,6 @@ export type Socket = SocketIO<
   DefaultEventsMap,
   SocketData
 >
-
-export interface Message<K extends keyof StatusDataMap = keyof StatusDataMap> {
-  gameId?: string
-  status: K
-  data: StatusDataMap[K]
-}
-
-export interface MessageWithoutStatus<T = unknown> {
-  gameId?: string
-  data: T
-}
-
-export interface MessageGameId {
-  gameId?: string
-}
 
 export interface ServerToClientEvents {
   connect: () => void
@@ -101,32 +88,20 @@ export interface ServerToClientEvents {
   [EVENTS.MANAGER.NEW_PLAYER]: (_player: Player) => void
   [EVENTS.MANAGER.REMOVE_PLAYER]: (_playerId: string) => void
   [EVENTS.MANAGER.PLAYER_KICKED]: (_playerId: string) => void
+  [EVENTS.MANAGER.PLAYER_UPDATED]: (_update: {
+    previousId: string
+    player: Player
+    timedOut: boolean
+  }) => void
   [EVENTS.MANAGER.LOCK_UPDATED]: (_locked: boolean) => void
 }
 
-export interface ClientToServerEvents {
-  // Manager actions
-  [EVENTS.MANAGER.RECONNECT]: (_message: { gameId: string }) => void
-  [EVENTS.MANAGER.LEAVE]: (_message: { gameId: string }) => void
-  [EVENTS.MANAGER.KICK_PLAYER]: (_message: {
-    gameId: string
-    playerId: string
-  }) => void
-  [EVENTS.MANAGER.START_GAME]: (_message: MessageGameId) => void
-  [EVENTS.MANAGER.ADVANCE]: (_message: MessageGameId) => void
-  [EVENTS.MANAGER.SET_LOCK]: (_message: {
-    gameId: string
-    locked: boolean
-  }) => void
+type ClientEventValidators = typeof clientEventValidators
 
-  // Player actions
-  [EVENTS.PLAYER.LOGIN]: (_message: { ticket: string }) => void
-  [EVENTS.PLAYER.RECONNECT]: (_message: { gameId: string }) => void
-  [EVENTS.PLAYER.LEAVE]: (_message: { gameId: string }) => void
-  [EVENTS.PLAYER.SELECTED_ANSWER]: (
-    _message: MessageWithoutStatus<{ answerKeys: number[] }>,
+export type ClientToServerEvents = {
+  [E in keyof ClientEventValidators]: (
+    _message: z.infer<ClientEventValidators[E]>,
   ) => void
-
-  // Common
+} & {
   disconnect: () => void
 }

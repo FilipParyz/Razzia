@@ -9,6 +9,7 @@ export interface PlayerManagerOptions {
   gameId: string
   gameMode: QuizzMode
   getManagerId: () => string
+  isStarted: () => boolean
 }
 
 export class PlayerManager {
@@ -16,13 +17,21 @@ export class PlayerManager {
   private readonly gameId: string
   private readonly gameMode: QuizzMode
   private readonly getManagerId: () => string
+  private readonly isStarted: () => boolean
   private players: Player[] = []
 
-  constructor({ io, gameId, gameMode, getManagerId }: PlayerManagerOptions) {
+  constructor({
+    io,
+    gameId,
+    gameMode,
+    getManagerId,
+    isStarted,
+  }: PlayerManagerOptions) {
     this.io = io
     this.gameId = gameId
     this.gameMode = gameMode
     this.getManagerId = getManagerId
+    this.isStarted = isStarted
   }
 
   join(socket: Socket, username: string): string | null {
@@ -51,7 +60,7 @@ export class PlayerManager {
 
     this.players.push(player)
     this.io.to(this.getManagerId()).emit(EVENTS.MANAGER.NEW_PLAYER, player)
-    this.io.to(this.gameId).emit(EVENTS.GAME.TOTAL_PLAYERS, this.players.length)
+    this.broadcastCount()
     socket.emit(EVENTS.GAME.SUCCESS_JOIN, {
       gameId: this.gameId,
       username,
@@ -75,7 +84,7 @@ export class PlayerManager {
     this.io
       .to(this.getManagerId())
       .emit(EVENTS.MANAGER.PLAYER_KICKED, player.id)
-    this.io.to(this.gameId).emit(EVENTS.GAME.TOTAL_PLAYERS, this.players.length)
+    this.broadcastCount()
 
     return true
   }
@@ -128,7 +137,15 @@ export class PlayerManager {
     return this.players.length
   }
 
+  joinedCount(): number {
+    if (this.isStarted()) {
+      return this.players.length
+    }
+
+    return this.players.filter((p) => p.connected).length
+  }
+
   broadcastCount(): void {
-    this.io.to(this.gameId).emit(EVENTS.GAME.TOTAL_PLAYERS, this.players.length)
+    this.io.to(this.gameId).emit(EVENTS.GAME.TOTAL_PLAYERS, this.joinedCount())
   }
 }

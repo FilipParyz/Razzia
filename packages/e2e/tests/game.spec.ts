@@ -2,7 +2,7 @@ import { BASIC_QUIZZ } from "@razzia/e2e/utils/constants"
 import { closePage, expect, test } from "@razzia/e2e/utils/fixtures"
 import { t } from "@razzia/e2e/utils/i18n"
 import { createGame, next, startGame } from "@razzia/e2e/utils/manager"
-import { answer, enterPin, joinGame } from "@razzia/e2e/utils/player"
+import { answer, enterPin, joinGame, typePin } from "@razzia/e2e/utils/player"
 
 test("plays a full quiz from the lobby to the podium", async ({
   page: manager,
@@ -63,6 +63,21 @@ test("refuses players once the room is locked", async ({
   await enterPin(player, pin)
 
   await expect(player.getByText(t("errors:game.locked"))).toBeVisible()
+})
+
+test("submits the PIN with the Enter key", async ({
+  page: manager,
+  newPage,
+}) => {
+  const pin = await createGame(manager)
+  const player = await newPage()
+
+  await typePin(player, pin)
+  await player.keyboard.press("Enter")
+
+  await expect(
+    player.getByPlaceholder(t("game:usernamePlaceholder")),
+  ).toBeVisible()
 })
 
 test("lets the manager kick a player", async ({ page: manager, newPage }) => {

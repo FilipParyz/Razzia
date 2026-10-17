@@ -26,6 +26,7 @@ export const EVENTS = {
     NEW_PLAYER: "manager:newPlayer",
     REMOVE_PLAYER: "manager:removePlayer",
     PLAYER_KICKED: "manager:playerKicked",
+    PLAYER_UPDATED: "manager:playerUpdated",
     RECONNECT: "manager:reconnect",
     LEAVE: "manager:leave",
     KICK_PLAYER: "manager:kickPlayer",
@@ -57,6 +58,10 @@ export const createDefaultGameSettings = (): GameSettings => ({
 })
 
 export const MAX_POINTS = 1000
+
+export const MIN_ANSWERS = 2
+
+export const MAX_ANSWERS = 4
 
 export const QUIZZ_MODES = {
   QUIZ: "quiz",

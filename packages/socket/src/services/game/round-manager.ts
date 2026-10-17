@@ -478,7 +478,9 @@ export class RoundManager {
       return
     }
 
-    const top = this.leaderboard.slice(0, 3)
+    const top = this.leaderboard
+      .slice(0, 3)
+      .map(({ username, points }) => ({ username, points }))
 
     this.opts.send(this.opts.getManagerId(), STATUS.FINISHED, {
       subject: this.opts.quizz.subject,
@@ -564,6 +566,12 @@ export class RoundManager {
       .emit(EVENTS.GAME.PLAYER_ANSWER, this.playersAnswers.length)
     this.opts.players.broadcastCount()
     this.endIfEveryoneAnswered()
+  }
+
+  updatePlayerId(oldId: string, newId: string): void {
+    this.playersAnswers = this.playersAnswers.map((answer) =>
+      answer.playerId === oldId ? { ...answer, playerId: newId } : answer,
+    )
   }
 
   endIfEveryoneAnswered(): void {

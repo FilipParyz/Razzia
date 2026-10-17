@@ -52,7 +52,11 @@ export interface CommonStatusDataMap {
     aheadOfMe: string | null
   }
   WAIT: { text: string }
-  FINISHED: { subject: string; top: Player[]; rank?: number }
+  FINISHED: {
+    subject: string
+    top: Array<Pick<Player, "username" | "points">>
+    rank?: number
+  }
   SUMMARY: { subject: string; totalPlayers: number; totalQuestions: number }
 }
 

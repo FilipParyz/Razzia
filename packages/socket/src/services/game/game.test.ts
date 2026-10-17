@@ -141,6 +141,37 @@ describe("quiz flow", () => {
     )
   })
 
+  it("refuses to start when every player is away", async () => {
+    const { game, manager, sockets, lastEvent } = setup(
+      createQuizz([createQuestion()]),
+    )
+
+    for (const socket of sockets) {
+      game.setPlayerDisconnected(socket.id)
+    }
+
+    await game.start(manager)
+
+    expect(game.started).toBe(false)
+    expect(game.players).toHaveLength(0)
+    expect(lastEvent(MANAGER, EVENTS.GAME.ERROR_MESSAGE)?.data).toBe(
+      "errors:game.noPlayersConnected",
+    )
+  })
+
+  it("removes away players when the game starts", async () => {
+    const { game, sockets, start, lastEvent } = setup(
+      createQuizz([createQuestion()]),
+    )
+    const [alice, bob] = sockets
+
+    game.setPlayerDisconnected(bob.id)
+    await start()
+
+    expect(game.players.map((player) => player.id)).toEqual([alice.id])
+    expect(lastEvent(MANAGER, EVENTS.MANAGER.REMOVE_PLAYER)?.data).toBe(bob.id)
+  })
+
   it("plays a full game and saves the result", async () => {
     const questions = [
       createQuestion({ solutions: [0] }),
@@ -190,6 +221,10 @@ describe("quiz flow", () => {
       data: { top: [{ username: "Alice", points: 1000 }, { username: "Bob" }] },
     })
     expect(status("bob")?.data).toMatchObject({ rank: 2 })
+    expect(status("bob")?.data.top).toEqual([
+      { username: "Alice", points: 1000 },
+      { username: "Bob", points: 0 },
+    ])
     expect(getResultsMeta().at(0)).toMatchObject({
       gameMode: QUIZZ_MODES.QUIZ,
       playerCount: 2,
@@ -449,6 +484,68 @@ describe("survey flow", () => {
   })
 })
 
+describe("player connection updates", () => {
+  it("tells the manager when a player's connection times out", () => {
+    const { game, sockets, lastEvent } = setup(createQuizz([createQuestion()]))
+    const [alice] = sockets
+
+    game.setPlayerDisconnected(alice.id, true)
+
+    expect(
+      lastEvent(MANAGER, EVENTS.MANAGER.PLAYER_UPDATED)?.data,
+    ).toMatchObject({
+      previousId: alice.id,
+      player: { id: alice.id, connected: false },
+      timedOut: true,
+    })
+  })
+
+  it("tells the manager when a player comes back on a new socket", () => {
+    const { game, sockets, createSocket, lastEvent } = setup(
+      createQuizz([createQuestion()]),
+    )
+    const [alice] = sockets
+
+    game.setPlayerDisconnected(alice.id)
+    game.reconnect(createSocket("alice-new", "alice"))
+
+    expect(
+      lastEvent(MANAGER, EVENTS.MANAGER.PLAYER_UPDATED)?.data,
+    ).toMatchObject({
+      previousId: alice.id,
+      player: { id: "alice-new", connected: true },
+      timedOut: false,
+    })
+  })
+
+  it("only counts connected players in the lobby", () => {
+    const { game, sockets, createSocket, lastEvent } = setup(
+      createQuizz([createQuestion()]),
+    )
+    const [alice] = sockets
+
+    game.setPlayerDisconnected(alice.id)
+
+    expect(lastEvent(game.gameId, EVENTS.GAME.TOTAL_PLAYERS)?.data).toBe(1)
+
+    game.reconnect(createSocket("alice-new", "alice"))
+
+    expect(lastEvent(game.gameId, EVENTS.GAME.TOTAL_PLAYERS)?.data).toBe(2)
+  })
+
+  it("keeps counting away players once the game started", async () => {
+    const { game, sockets, start, lastEvent } = setup(
+      createQuizz([createQuestion()]),
+    )
+    const [alice] = sockets
+
+    await start()
+    game.setPlayerDisconnected(alice.id)
+
+    expect(lastEvent(game.gameId, EVENTS.GAME.TOTAL_PLAYERS)?.data).toBe(2)
+  })
+})
+
 describe("reconnection", () => {
   it("restores a disconnected player on a new socket", async () => {
     const { game, sockets, start, createSocket, lastEvent } = setup(
@@ -485,6 +582,41 @@ describe("reconnection", () => {
       lastEvent("alice-new", EVENTS.PLAYER.SUCCESS_RECONNECT),
     ).toBeDefined()
     expect(disconnected).toEqual([alice.id])
+  })
+
+  it("keeps the answer of a player who reconnects before the result", async () => {
+    const { game, sockets, start, createSocket, status } = setup(
+      createQuizz([createQuestion({ solutions: [0] })]),
+    )
+    const [alice] = sockets
+
+    await start()
+    game.selectAnswer(alice, [0])
+    game.setPlayerDisconnected(alice.id)
+    game.reconnect(createSocket("alice-new", "alice"))
+    game.advance()
+    await vi.advanceTimersByTimeAsync(TICK_MS)
+
+    expect(status("alice-new")?.data).toMatchObject({ correct: true })
+  })
+
+  it("refuses a second answer after a reconnection", async () => {
+    const { game, sockets, start, createSocket, status } = setup(
+      createQuizz([createQuestion({ solutions: [0] })]),
+    )
+    const [alice] = sockets
+
+    await start()
+    game.selectAnswer(alice, [0])
+
+    const aliceNew = createSocket("alice-new", "alice")
+
+    game.reconnect(aliceNew)
+    game.selectAnswer(aliceNew, [1])
+    game.advance()
+    await vi.advanceTimersByTimeAsync(TICK_MS)
+
+    expect(status("alice-new")?.data).toMatchObject({ correct: true })
   })
 
   it("hands the game over to the latest manager connection", () => {

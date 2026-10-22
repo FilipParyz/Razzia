@@ -22,6 +22,8 @@
     "unlock": "Odblokuj pokój"
   },
   "pinLabel": "Kod PIN",
+  "playerConnectionLost": "Utracono połączenie",
+  "playerReconnecting": "Oczekiwanie na ponowne połączenie",
   "playersJoined": "Dołączeni gracze",
   "questionPrefix": "Pytanie nr ",
   "rank_ordinal_other": "{{count}}. miejsce",
